@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spun — Your AI Agent. Set Up in Minutes.</title>
+  <meta name="description" content="We set up your personal AI agent on your Mac or PC. One payment, done in 15 minutes. Runs 24/7, handles your inbox, research, tasks, and more." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --bg2: #111111;
+      --bg3: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #f0f0f0;
+      --muted: #888;
+      --accent: #9945ff;
+      --accent2: #14f195;
+      --green: #14f195;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Nav */
+    nav {
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(10,10,10,0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .nav-cta {
+      background: var(--accent);
+      color: white !important;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      -webkit-text-fill-color: white;
+      transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; text-decoration: none; }
+
+    /* Hero */
+    .hero {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 80px 24px 60px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(153,69,255,0.15);
+      border: 1px solid rgba(153,69,255,0.3);
+      color: var(--accent2);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 100px;
+      margin-bottom: 28px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      margin-bottom: 20px;
+    }
+    h1 span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 40px;
+    }
+
+    /* CTA */
+    .cta-group { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #7b2fe0);
+      color: white !important;
+      -webkit-text-fill-color: white;
+      padding: 16px 40px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; text-decoration: none; }
+    .sol-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .sol-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); }
+
+    /* Terminal preview */
+    .terminal-wrap {
+      max-width: 620px;
+      margin: 60px auto;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      text-align: left;
+    }
+    .terminal-bar {
+      background: var(--bg2);
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.red { background: #ff5f56; }
+    .dot.yellow { background: #ffbd2e; }
+    .dot.green { background: #27c93f; }
+    .terminal-title { font-size: 13px; color: var(--muted); margin-left: 8px; }
+    .terminal-body {
+      padding: 20px 24px;
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    .t-prompt { color: var(--accent2); }
+    .t-cmd { color: var(--text); }
+    .t-success { color: var(--green); }
+    .t-muted { color: var(--muted); }
+    .t-accent { color: var(--accent); }
+
+    /* Steps */
+    .steps-section { max-width: 720px; margin: 0 auto; padding: 20px 24px 60px; }
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .steps { display: flex; flex-direction: column; gap: 16px; }
+    .step {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #7b2fe0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .step-content h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .step-content p { font-size: 14px; color: var(--muted); }
+
+    /* What you get */
+    .features-section { max-width: 720px; margin: 0 auto; padding: 20px 24px 60px; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .feature {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .feature-icon { font-size: 24px; margin-bottom: 10px; }
+    .feature h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .feature p { font-size: 13px; color: var(--muted); }
+
+    /* Price */
+    .price-section {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px 24px 80px;
+      text-align: center;
+    }
+    .price-card {
+      background: var(--bg2);
+      border: 1px solid var(--accent);
+      border-radius: 16px;
+      padding: 40px 32px;
+    }
+    .price-card h2 { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+    .price {
+      font-size: 52px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin: 16px 0 4px;
+    }
+    .price-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+    .price-list { list-style: none; text-align: left; margin-bottom: 28px; }
+    .price-list li {
+      padding: 8px 0;
+      font-size: 15px;
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .price-list li:last-child { border-bottom: none; }
+    .check { color: var(--green); font-weight: 700; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 480px) {
+      .hero { padding: 48px 20px 40px; }
+      h1 { letter-spacing: -1px; }
+      .btn-primary { font-size: 16px; padding: 14px 28px; width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="logo">spun</div>
+    <a href="#get-started" class="nav-cta">Get Started →</a>
+  </nav>
+
+  <section class="hero">
+    <div class="badge">✦ Powered by Claude Max</div>
+    <h1>Your AI agent.<br><span>Set up in minutes.</span></h1>
+    <p class="subtitle">
+      We install and configure your personal AI assistant on your computer.
+      One payment. No subscriptions. No tech skills required.
+    </p>
+    <div class="cta-group" id="get-started">
+      <a href="https://moonpay.hel.io/pay/69963c4707af61b73ab1efe2" class="btn-primary">
+        Get Your Agent →
+      </a>
+      <div class="sol-badge">
+        <div class="sol-dot"></div>
+        Accepts SOL only &nbsp;·&nbsp; One-time payment &nbsp;·&nbsp; Instant delivery
+      </div>
+    </div>
+  </section>
+
+  <div class="terminal-wrap">
+    <div class="terminal-bar">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+      <span class="terminal-title">Terminal</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="t-prompt">~</span> <span class="t-cmd">curl -fsSL https://spun.sh/install | bash</span></div>
+      <div class="t-muted">&nbsp;</div>
+      <div><span class="t-success">✓</span> Node.js 22 installed</div>
+      <div><span class="t-success">✓</span> OpenClaw installed</div>
+      <div><span class="t-success">✓</span> Claude CLI installed</div>
+      <div><span class="t-muted">→ Browser opening for Claude login...</span></div>
+      <div><span class="t-success">✓</span> Claude authenticated</div>
+      <div><span class="t-success">✓</span> Claude Max bridge configured</div>
+      <div><span class="t-success">✓</span> OpenClaw gateway started</div>
+      <div class="t-muted">&nbsp;</div>
+      <div><span class="t-accent">  You're live. 🎉</span></div>
+    </div>
+  </div>
+
+  <section class="steps-section">
+    <div class="section-label">How it works</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>Pay with SOL</h3>
+          <p>One-time payment. No subscription. Your install link is delivered instantly after payment confirms.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>Paste one command in Terminal</h3>
+          <p>Open Terminal on your Mac (or Command Prompt on Windows), paste the command, hit enter. That's it.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>Log into Claude</h3>
+          <p>A browser tab opens automatically. Sign in with your Claude.ai account. Takes 30 seconds.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>Your agent is live</h3>
+          <p>OpenClaw is installed, configured, and running. Message it on Telegram or wherever you prefer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features-section">
+    <div class="section-label">What you get</div>
+    <div class="features-grid">
+      <div class="feature">
+        <div class="feature-icon">🤖</div>
+        <h3>Personal AI Agent</h3>
+        <p>Runs on your computer, talks to you on Telegram, does real work.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <h3>Your Data, Your Machine</h3>
+        <p>Nothing stored on our servers. Everything stays local.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">💳</div>
+        <h3>Uses Your Claude Max</h3>
+        <p>No extra API fees. Uses the subscription you already pay for.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⚡</div>
+        <h3>15-Minute Setup</h3>
+        <p>Fully automated. The script handles everything while you watch.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🛠</div>
+        <h3>Full OpenClaw Stack</h3>
+        <p>Scheduling, memory, web browsing, file access, and more built in.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📲</div>
+        <h3>Telegram Integration</h3>
+        <p>Talk to your agent from your phone. It responds like a contact.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="price-section">
+    <div class="price-card">
+      <h2>One-Time Setup</h2>
+      <div class="price">0.5 SOL</div>
+      <p class="price-sub">~$75 USD · paid once · no recurring fees</p>
+      <ul class="price-list">
+        <li><span class="check">✓</span> Full automated install (Mac + PC)</li>
+        <li><span class="check">✓</span> Claude Max OAuth configured</li>
+        <li><span class="check">✓</span> Telegram integration setup</li>
+        <li><span class="check">✓</span> Runs on startup automatically</li>
+        <li><span class="check">✓</span> Setup guide included</li>
+        <li><span class="check">✓</span> Support via Telegram</li>
+      </ul>
+      <a href="https://moonpay.hel.io/pay/69963c4707af61b73ab1efe2" class="btn-primary" style="width:100%; justify-content:center;">
+        Pay with SOL →
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <p>spun.sh &nbsp;·&nbsp; Built on <a href="https://openclaw.ai">OpenClaw</a> &nbsp;·&nbsp; Requires Claude Max/Pro subscription</p>
+  </footer>
+
+</body>
+</html>

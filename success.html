@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Confirmed — Spun</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0a; --bg2: #111111; --border: #2a2a2a;
+      --text: #f0f0f0; --muted: #888; --accent: #9945ff; --green: #14f195;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      max-width: 560px; width: 100%;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 40px 32px; text-align: center;
+    }
+    .check-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: rgba(20,241,149,0.15); border: 2px solid var(--green);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin: 0 auto 24px;
+    }
+    h1 { font-size: 28px; font-weight: 900; margin-bottom: 10px; }
+    .subtitle { color: var(--muted); font-size: 15px; margin-bottom: 36px; }
+    .install-box {
+      background: #0d0d0d; border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 24px; text-align: left; margin-bottom: 24px;
+    }
+    .install-label { font-size: 12px; color: var(--muted); font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+    .install-cmd {
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 15px;
+      color: var(--green); word-break: break-all; line-height: 1.5;
+    }
+    .copy-btn {
+      display: block; width: 100%; padding: 12px;
+      background: rgba(153,69,255,0.15); border: 1px solid var(--accent);
+      color: var(--accent); border-radius: 8px; font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-top: 12px; transition: background 0.2s;
+    }
+    .copy-btn:hover { background: rgba(153,69,255,0.25); }
+    .steps-mini { text-align: left; margin-bottom: 28px; }
+    .steps-mini h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    .step-mini {
+      display: flex; gap: 12px; padding: 8px 0;
+      border-bottom: 1px solid var(--border); font-size: 14px; align-items: flex-start;
+    }
+    .step-mini:last-child { border-bottom: none; }
+    .step-n { color: var(--accent); font-weight: 700; flex-shrink: 0; }
+    .step-t { color: var(--muted); }
+    .support { font-size: 13px; color: var(--muted); }
+    .support a { color: var(--green); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="check-icon">✓</div>
+    <h1>Payment confirmed.</h1>
+    <p class="subtitle">You're one command away from your AI agent.</p>
+
+    <div class="install-box">
+      <div class="install-label">Your install command</div>
+      <div class="install-cmd" id="cmd">curl -fsSL https://spun.sh/install | bash</div>
+      <button class="copy-btn" onclick="copyCmd()">Copy Command</button>
+    </div>
+
+    <div class="steps-mini">
+      <h3>What to do now:</h3>
+      <div class="step-mini">
+        <span class="step-n">1.</span>
+        <span class="step-t">Open <strong>Terminal</strong> on your Mac (search "Terminal" in Spotlight)</span>
+      </div>
+      <div class="step-mini">
+        <span class="step-n">2.</span>
+        <span class="step-t">Paste the command above and hit <strong>Enter</strong></span>
+      </div>
+      <div class="step-mini">
+        <span class="step-n">3.</span>
+        <span class="step-t">When your browser opens, <strong>log into Claude.ai</strong> and authorize</span>
+      </div>
+      <div class="step-mini">
+        <span class="step-n">4.</span>
+        <span class="step-t">Done. Your agent is live.</span>
+      </div>
+    </div>
+
+    <p class="support">Stuck? Message us: <a href="https://t.me/spunsetup">@spunsetup</a></p>
+  </div>
+
+  <script>
+    function copyCmd() {
+      const cmd = document.getElementById('cmd').textContent;
+      navigator.clipboard.writeText(cmd).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy Command', 2000);
+      });
+    }
+  </script>
+</body>
+</html>
