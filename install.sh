@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # spun.sh — OpenClaw + Claude Max Setup
 # https://spun.sh
-set -euo pipefail
+# Fix stdin for curl | bash — must run BEFORE set -e so failure doesn't silently kill the script
+exec < /dev/tty 2>/dev/null || true
 
-# When piped via curl | bash, stdin is the pipe not the terminal.
-# Redirect stdin back to the TTY so read commands work correctly.
-exec < /dev/tty
+set -euo pipefail
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
