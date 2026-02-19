@@ -215,44 +215,27 @@ echo ""
 
 BOT_TOKEN=""
 BOT_USERNAME="your_bot"
-ATTEMPTS=0
+
 while true; do
-  ATTEMPTS=$((ATTEMPTS + 1))
   read -p "Paste your bot token here: " BOT_TOKEN
   BOT_TOKEN="$(echo "$BOT_TOKEN" | tr -d '[:space:]')"  # strip all whitespace
-
-  if [[ -z "$BOT_TOKEN" ]]; then
-    warn "Token can't be empty. Try again."
-    continue
-  fi
-
-  # Validate token with Telegram API
-  info "Validating token with Telegram..."
-  VALIDATE_RESP=$(curl -s --max-time 10 "https://api.telegram.org/bot${BOT_TOKEN}/getMe" 2>/dev/null || echo '{"ok":false}')
-  TG_OK=$(echo "$VALIDATE_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(str(d.get('ok',False)).lower())" 2>/dev/null || echo "false")
-
-  if [[ "$TG_OK" == "true" ]]; then
-    BOT_USERNAME=$(echo "$VALIDATE_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['result']['username'])" 2>/dev/null || echo "your_bot")
-    success "Bot token valid! Bot: @${BOT_USERNAME}"
-    break
-  else
-    TG_DESC=$(echo "$VALIDATE_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('description','Unknown error'))" 2>/dev/null || echo "No response")
-    warn "Telegram says: ${TG_DESC}"
-    warn "Token format should look like: 1234567890:ABCDefGhIJKlmNoPQRsTUVwxyZ"
-    echo ""
-    if [[ "$ATTEMPTS" -ge 3 ]]; then
-      echo -e "  ${YELLOW}Still having trouble? Options:${RESET}"
-      echo "  S) Skip validation and use token as-is (if you're sure it's correct)"
-      echo "  R) Retry with a different token"
-      read -p "  Enter S or R: " CHOICE
-      if [[ "${CHOICE,,}" == "s" ]]; then
-        warn "Skipping validation — make sure your token is correct."
-        BOT_USERNAME="your_bot"
-        break
-      fi
-    fi
-  fi
+  [[ -z "$BOT_TOKEN" ]] && warn "Token can't be empty. Try again." && continue
+  break
 done
+
+# Try to validate — but never block on it
+info "Checking token with Telegram..."
+VALIDATE_RESP=$(curl -s --max-time 8 "https://api.telegram.org/bot${BOT_TOKEN}/getMe" 2>/dev/null || echo '{"ok":false}')
+TG_OK=$(echo "$VALIDATE_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(str(d.get('ok',False)).lower())" 2>/dev/null || echo "false")
+
+if [[ "$TG_OK" == "true" ]]; then
+  BOT_USERNAME=$(echo "$VALIDATE_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['result']['username'])" 2>/dev/null || echo "your_bot")
+  success "Bot confirmed: @${BOT_USERNAME}"
+else
+  TG_DESC=$(echo "$VALIDATE_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('description','No response from Telegram'))" 2>/dev/null || echo "No response")
+  warn "Could not verify token (${TG_DESC}) — writing it anyway."
+  warn "If your bot doesn't respond after setup, double-check the token in BotFather."
+fi
 
 # ─── Configure OpenClaw ───────────────────────────────────────────────────────
 header "Step 6/6 — Configuring OpenClaw"
