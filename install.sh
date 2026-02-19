@@ -38,7 +38,7 @@ esac
 success "Platform: $PLATFORM"
 
 # ─── Node.js ──────────────────────────────────────────────────────────────────
-header "Step 1/5 — Node.js"
+header "Step 1/6 — Node.js"
 NODE_MIN=22
 install_node() {
   if [[ "$PLATFORM" == "macOS" ]]; then
@@ -70,11 +70,11 @@ else
 fi
 
 # ─── OpenClaw ─────────────────────────────────────────────────────────────────
-header "Step 2/5 — OpenClaw"
+header "Step 2/6 — OpenClaw"
 if command -v openclaw &>/dev/null; then
   info "OpenClaw found. Updating to latest..."
-  npm update -g openclaw
-  success "OpenClaw updated"
+  npm update -g openclaw 2>/dev/null || true
+  success "OpenClaw updated: $(openclaw --version 2>/dev/null || echo 'ok')"
 else
   info "Installing OpenClaw..."
   npm install -g openclaw
@@ -82,9 +82,9 @@ else
 fi
 
 # ─── Claude Code CLI ──────────────────────────────────────────────────────────
-header "Step 3/5 — Claude Code CLI"
+header "Step 3/6 — Claude Code CLI"
 if command -v claude &>/dev/null; then
-  success "Claude CLI already installed"
+  success "Claude CLI already installed: $(claude --version 2>/dev/null || echo 'ok')"
 else
   info "Installing Claude Code CLI..."
   npm install -g @anthropic-ai/claude-code
@@ -92,19 +92,21 @@ else
 fi
 
 echo ""
-echo -e "${BOLD}${YELLOW}ACTION REQUIRED — Claude Login${RESET}"
+echo -e "${BOLD}${YELLOW}ACTION REQUIRED — Log in with Claude Max${RESET}"
 echo "────────────────────────────────────────────"
-echo "Your browser will open. Log in with your Claude.ai account."
-echo "This is how your AI agent uses your Claude Max subscription."
-echo "(Close the browser tab after you see 'Authorization successful')"
+echo "Your browser will open. Sign in with the Claude.ai account"
+echo "that has your Claude Max subscription."
+echo ""
+echo "This is how your AI agent uses Claude — no API key needed."
+echo "(Close the browser tab once you see 'Authorization successful')"
 echo "────────────────────────────────────────────"
 echo ""
 read -p "Press ENTER when ready to log in..."
-claude auth login
-success "Claude authenticated"
+claude auth login || error "Claude login failed. Please try running 'claude auth login' manually."
+success "Claude authenticated ✓"
 
-# ─── Claude Max API Proxy ─────────────────────────────────────────────────────
-header "Step 4/5 — Claude Max Bridge"
+# ─── Claude Max API Bridge ────────────────────────────────────────────────────
+header "Step 4/6 — Claude Max Bridge"
 if command -v claude-max-api &>/dev/null; then
   success "Claude Max bridge already installed"
 else
@@ -113,14 +115,31 @@ else
   success "Claude Max bridge installed"
 fi
 
-# Auto-start on login (macOS)
+# Start the bridge and set it to auto-start on login
+BRIDGE_PORT=3456
+start_bridge() {
+  if curl -sf "http://localhost:${BRIDGE_PORT}/health" &>/dev/null; then
+    success "Claude Max bridge already running on port $BRIDGE_PORT"
+    return
+  fi
+  info "Starting Claude Max bridge on port $BRIDGE_PORT..."
+  nohup claude-max-api > /tmp/claude-max-api.log 2>&1 &
+  sleep 3
+  if curl -sf "http://localhost:${BRIDGE_PORT}/health" &>/dev/null; then
+    success "Claude Max bridge started"
+  else
+    warn "Bridge may still be starting — continuing anyway"
+  fi
+}
+
 if [[ "$PLATFORM" == "macOS" ]]; then
   PLIST="$HOME/Library/LaunchAgents/com.claude-max-api.plist"
   if [[ ! -f "$PLIST" ]]; then
-    info "Setting Claude Max bridge to start automatically..."
-    NODE_PATH="$(which node)"
-    PROXY_PATH="$(npm root -g)/claude-max-api-proxy/dist/server/standalone.js"
-    cat > "$PLIST" << EOF
+    info "Configuring bridge to start automatically on login..."
+    NODE_BIN="$(which node)"
+    PROXY_BIN="$(which claude-max-api 2>/dev/null || npm root -g)/claude-max-api-proxy/dist/server/standalone.js"
+    mkdir -p "$HOME/Library/LaunchAgents"
+    cat > "$PLIST" << PLIST_EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -130,67 +149,202 @@ if [[ "$PLATFORM" == "macOS" ]]; then
   <key>KeepAlive</key><true/>
   <key>ProgramArguments</key>
   <array>
-    <string>$NODE_PATH</string>
-    <string>$PROXY_PATH</string>
+    <string>${NODE_BIN}</string>
+    <string>${PROXY_BIN}</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key>
     <string>/usr/local/bin:/opt/homebrew/bin:$HOME/.local/bin:/usr/bin:/bin</string>
   </dict>
+  <key>StandardOutPath</key><string>/tmp/claude-max-api.log</string>
+  <key>StandardErrorPath</key><string>/tmp/claude-max-api.log</string>
 </dict>
 </plist>
-EOF
+PLIST_EOF
     launchctl bootstrap gui/$(id -u) "$PLIST" 2>/dev/null || true
     success "Bridge configured to start on login"
   fi
-  # Start it now if not running
-  if ! curl -sf http://localhost:3456/health &>/dev/null; then
-    info "Starting Claude Max bridge..."
-    launchctl kickstart gui/$(id -u)/com.claude-max-api 2>/dev/null || claude-max-api &
-    sleep 2
+  # Kick it now if not running
+  if ! curl -sf "http://localhost:${BRIDGE_PORT}/health" &>/dev/null; then
+    launchctl kickstart -k gui/$(id -u)/com.claude-max-api 2>/dev/null || true
+    sleep 3
   fi
-fi
-
-# ─── OpenClaw Config ──────────────────────────────────────────────────────────
-header "Step 5/5 — Configuring OpenClaw"
-CONFIG_DIR="$HOME/.openclaw"
-CONFIG_FILE="$CONFIG_DIR/config.json5"
-mkdir -p "$CONFIG_DIR"
-
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  cat > "$CONFIG_FILE" << 'EOF'
-{
-  env: {
-    OPENAI_API_KEY: "not-needed",
-    OPENAI_BASE_URL: "http://localhost:3456/v1",
-  },
-  agents: {
-    defaults: {
-      model: { primary: "openai/claude-sonnet-4" },
-    },
-  },
-}
-EOF
-  success "OpenClaw configured"
+  start_bridge
 else
-  warn "Config already exists — skipping. (Edit $CONFIG_FILE manually if needed)"
+  # Linux — use systemd if available, else just start it
+  if command -v systemctl &>/dev/null && [[ -d "$HOME/.config/systemd/user" ]] 2>/dev/null; then
+    UNIT_FILE="$HOME/.config/systemd/user/claude-max-api.service"
+    if [[ ! -f "$UNIT_FILE" ]]; then
+      mkdir -p "$HOME/.config/systemd/user"
+      cat > "$UNIT_FILE" << UNIT_EOF
+[Unit]
+Description=Claude Max API Bridge
+After=network.target
+
+[Service]
+ExecStart=$(which claude-max-api)
+Restart=always
+RestartSec=5
+StandardOutput=append:/tmp/claude-max-api.log
+StandardError=append:/tmp/claude-max-api.log
+
+[Install]
+WantedBy=default.target
+UNIT_EOF
+      systemctl --user enable claude-max-api.service 2>/dev/null || true
+      systemctl --user start claude-max-api.service 2>/dev/null || true
+      success "Bridge configured to start on login (systemd)"
+    fi
+  fi
+  start_bridge
 fi
+
+# ─── Telegram Bot Setup ───────────────────────────────────────────────────────
+header "Step 5/6 — Telegram Bot"
+echo ""
+echo -e "${BOLD}Create your Telegram bot (takes ~60 seconds):${RESET}"
+echo ""
+echo "  1. Open Telegram and search for ${BOLD}@BotFather${RESET}"
+echo "  2. Send: ${CYAN}/newbot${RESET}"
+echo "  3. Choose a display name (e.g. 'My Assistant')"
+echo "  4. Choose a username ending in 'bot' (e.g. 'myassistant_bot')"
+echo "  5. Copy the token BotFather gives you — looks like:"
+echo "     ${YELLOW}1234567890:ABCDefGhIJKlmNoPQRsTUVwxyZ${RESET}"
+echo ""
+
+BOT_TOKEN=""
+while true; do
+  read -p "Paste your bot token here: " BOT_TOKEN
+  BOT_TOKEN="$(echo "$BOT_TOKEN" | xargs)"  # trim whitespace
+
+  if [[ -z "$BOT_TOKEN" ]]; then
+    warn "Token can't be empty. Try again."
+    continue
+  fi
+
+  # Validate token with Telegram API
+  info "Validating token with Telegram..."
+  VALIDATE_RESP=$(curl -sf "https://api.telegram.org/bot${BOT_TOKEN}/getMe" 2>/dev/null || echo '{"ok":false}')
+  TG_OK=$(echo "$VALIDATE_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('ok','false'))" 2>/dev/null || echo "false")
+
+  if [[ "$TG_OK" == "True" ]]; then
+    BOT_USERNAME=$(echo "$VALIDATE_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['result']['username'])" 2>/dev/null || echo "your_bot")
+    success "Bot token valid! Bot: @${BOT_USERNAME}"
+    break
+  else
+    warn "Token doesn't seem valid (Telegram rejected it). Double-check and try again."
+  fi
+done
+
+# ─── Configure OpenClaw ───────────────────────────────────────────────────────
+header "Step 6/6 — Configuring OpenClaw"
+OPENCLAW_DIR="$HOME/.openclaw"
+CONFIG_FILE="$OPENCLAW_DIR/openclaw.json"
+WORKSPACE_DIR="$OPENCLAW_DIR/workspace"
+
+mkdir -p "$OPENCLAW_DIR"
+mkdir -p "$WORKSPACE_DIR"
+
+if [[ -f "$CONFIG_FILE" ]]; then
+  warn "Config already exists. Backing up to openclaw.json.bak"
+  cp "$CONFIG_FILE" "${CONFIG_FILE}.bak"
+fi
+
+# Write the correct openclaw.json
+python3 - "$BOT_TOKEN" "$WORKSPACE_DIR" << 'PYEOF'
+import json, sys
+
+bot_token = sys.argv[1]
+workspace = sys.argv[2]
+
+config = {
+  "models": {
+    "providers": {
+      "claude-max": {
+        "baseUrl": "http://localhost:3456/v1",
+        "apiKey": "not-needed",
+        "api": "openai-completions",
+        "models": [
+          {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6"},
+          {"id": "claude-sonnet-4-5", "name": "Claude Sonnet 4.5"},
+          {"id": "claude-haiku-3-5",  "name": "Claude Haiku 3.5"}
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "claude-max/claude-sonnet-4-6",
+        "fallbacks": ["claude-max/claude-sonnet-4-5"]
+      },
+      "models": {
+        "claude-max/claude-sonnet-4-6": {},
+        "claude-max/claude-sonnet-4-5": {},
+        "claude-max/claude-haiku-3-5": {}
+      },
+      "workspace": workspace
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": True,
+      "accounts": {
+        "default": {
+          "botToken": bot_token,
+          "dmPolicy": "open"
+        }
+      }
+    }
+  }
+}
+
+config_path = f"{__import__('os').path.expanduser('~')}/.openclaw/openclaw.json"
+with open(config_path, 'w') as f:
+    json.dump(config, f, indent=2)
+print(f"Config written to {config_path}")
+PYEOF
+
+success "OpenClaw configured"
 
 # ─── Start OpenClaw ───────────────────────────────────────────────────────────
 info "Starting OpenClaw gateway..."
 openclaw gateway start 2>/dev/null || true
+sleep 2
+
+# Quick sanity check
+if openclaw gateway status 2>/dev/null | grep -q -i "running"; then
+  GATEWAY_OK=true
+else
+  GATEWAY_OK=false
+fi
 
 # ─── Done ─────────────────────────────────────────────────────────────────────
 echo ""
 echo "────────────────────────────────────────────"
-echo -e "${GREEN}${BOLD}  You're live. 🎉${RESET}"
+if [[ "$GATEWAY_OK" == "true" ]]; then
+  echo -e "${GREEN}${BOLD}  You're live. 🎉${RESET}"
+else
+  echo -e "${YELLOW}${BOLD}  Almost there — one more step below.${RESET}"
+fi
 echo "────────────────────────────────────────────"
 echo ""
-echo -e "  ${BOLD}Next steps:${RESET}"
-echo "  1. Open Telegram and message your OpenClaw bot"
-echo "  2. Or run: openclaw status"
-echo "  3. Full setup guide: spun.sh/guide"
+echo -e "  ${BOLD}To start chatting:${RESET}"
+echo -e "  1. Open Telegram and find ${CYAN}@${BOT_USERNAME}${RESET}"
+echo "  2. Send it any message — your agent will respond"
+echo ""
+
+if [[ "$GATEWAY_OK" != "true" ]]; then
+  echo -e "  ${YELLOW}Gateway didn't start automatically. Run:${RESET}"
+  echo -e "  ${BOLD}openclaw gateway start${RESET}"
+  echo ""
+fi
+
+echo -e "  ${BOLD}Useful commands:${RESET}"
+echo "  openclaw gateway status   — check if running"
+echo "  openclaw gateway restart  — restart the gateway"
+echo "  openclaw status           — full system status"
 echo ""
 echo -e "  ${CYAN}Need help? spun.sh/support${RESET}"
 echo ""
