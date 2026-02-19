@@ -293,10 +293,12 @@ config = {
   "channels": {
     "telegram": {
       "enabled": True,
+      "dmPolicy": "open",
       "accounts": {
         "default": {
           "botToken": bot_token,
-          "dmPolicy": "open"
+          "dmPolicy": "open",
+          "allowFrom": ["*"]
         }
       }
     }
