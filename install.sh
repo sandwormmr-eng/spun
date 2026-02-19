@@ -262,30 +262,36 @@ bot_token = sys.argv[1]
 workspace = sys.argv[2]
 
 config = {
-  "env": {
-    "OPENAI_API_KEY": "not-needed",
-    "OPENAI_BASE_URL": "http://localhost:3456/v1"
+  "gateway": {
+    "mode": "local"
+  },
+  "models": {
+    "providers": {
+      "claude-max": {
+        "baseUrl": "http://localhost:3456/v1",
+        "apiKey": "not-needed",
+        "models": [
+          {"id": "claude-sonnet-4"},
+          {"id": "claude-haiku-4"},
+          {"id": "claude-opus-4"}
+        ]
+      }
+    }
   },
   "agents": {
     "defaults": {
       "model": {
-        "primary": "openai/claude-sonnet-4",
-        "fallbacks": ["openai/claude-haiku-4"]
-      },
-      "models": {
-        "openai/claude-sonnet-4": {},
-        "openai/claude-haiku-4": {}
+        "primary": "claude-max/claude-sonnet-4",
+        "fallbacks": ["claude-max/claude-haiku-4"]
       },
       "workspace": workspace
     }
-  },
-  "gateway": {
-    "mode": "local"
   },
   "channels": {
     "telegram": {
       "enabled": True,
       "dmPolicy": "open",
+      "allowFrom": ["*"],
       "accounts": {
         "default": {
           "botToken": bot_token,
@@ -307,8 +313,10 @@ success "OpenClaw configured"
 
 # ─── Start OpenClaw ───────────────────────────────────────────────────────────
 info "Starting OpenClaw gateway..."
+openclaw gateway install 2>/dev/null || true
+openclaw doctor --fix 2>/dev/null || true
 openclaw gateway start 2>/dev/null || true
-sleep 2
+sleep 3
 
 # Quick sanity check
 if openclaw gateway status 2>/dev/null | grep -q -i "running"; then
