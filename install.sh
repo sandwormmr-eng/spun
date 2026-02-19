@@ -290,6 +290,9 @@ config = {
       "workspace": workspace
     }
   },
+  "gateway": {
+    "mode": "local"
+  },
   "channels": {
     "telegram": {
       "enabled": True,
