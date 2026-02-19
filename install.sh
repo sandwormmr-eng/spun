@@ -262,30 +262,19 @@ bot_token = sys.argv[1]
 workspace = sys.argv[2]
 
 config = {
-  "models": {
-    "providers": {
-      "claude-max": {
-        "baseUrl": "http://localhost:3456/v1",
-        "apiKey": "not-needed",
-        "api": "openai-completions",
-        "models": [
-          {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6"},
-          {"id": "claude-sonnet-4-5", "name": "Claude Sonnet 4.5"},
-          {"id": "claude-haiku-3-5",  "name": "Claude Haiku 3.5"}
-        ]
-      }
-    }
+  "env": {
+    "OPENAI_API_KEY": "not-needed",
+    "OPENAI_BASE_URL": "http://localhost:3456/v1"
   },
   "agents": {
     "defaults": {
       "model": {
-        "primary": "claude-max/claude-sonnet-4-6",
-        "fallbacks": ["claude-max/claude-sonnet-4-5"]
+        "primary": "openai/claude-sonnet-4",
+        "fallbacks": ["openai/claude-haiku-4"]
       },
       "models": {
-        "claude-max/claude-sonnet-4-6": {},
-        "claude-max/claude-sonnet-4-5": {},
-        "claude-max/claude-haiku-3-5": {}
+        "openai/claude-sonnet-4": {},
+        "openai/claude-haiku-4": {}
       },
       "workspace": workspace
     }
