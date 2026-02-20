@@ -282,12 +282,12 @@
       One payment. No subscriptions. No tech skills required.
     </p>
     <div class="cta-group" id="get-started">
-      <a href="solana:FN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt?label=Spun&message=Spun%20Setup%20-%20%24125" class="btn-primary">
+      <a href="#pay" class="btn-primary">
         Get Your Agent →
       </a>
       <div class="sol-badge">
         <div class="sol-dot"></div>
-        Accepts SOL only &nbsp;·&nbsp; One-time payment &nbsp;·&nbsp; Instant delivery<br><small style="font-size:11px;opacity:0.6;word-break:break-all;display:block;margin-top:6px;">No Phantom? Send manually: FN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt</small>
+        Accepts SOL only &nbsp;·&nbsp; One-time payment &nbsp;·&nbsp; Instant delivery
       </div>
     </div>
   </section>
@@ -397,9 +397,16 @@
         <li><span class="check">✓</span> Setup guide included</li>
         <li><span class="check">✓</span> Support via Telegram</li>
       </ul>
-      <a href="solana:FN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt?label=Spun&message=Spun%20Setup%20-%20%24125" class="btn-primary" style="width:100%; justify-content:center;">
-        Pay with SOL →
-      </a>
+      <div id="pay" style="margin-top:8px; background:var(--bg); border:1px solid var(--accent); border-radius:12px; padding:24px; text-align:center;">
+        <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Scan with any Solana wallet app (Phantom, Backpack, etc.)</p>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=solana%3AFN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt%3Flabel%3DSpun%26message%3DSpun%2520Setup%2520-%2520%24125" alt="Solana Pay QR" style="border-radius:8px; width:180px; height:180px; display:block; margin:0 auto 16px;" />
+        <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">— or copy address manually —</p>
+        <div style="display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap;">
+          <code id="wallet-addr" style="font-size:11px; background:var(--bg2); padding:8px 12px; border-radius:8px; word-break:break-all; flex:1; min-width:0; text-align:left;">FN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt</code>
+          <button onclick="navigator.clipboard.writeText('FN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)})" style="background:var(--accent);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Copy</button>
+        </div>
+        <p style="font-size:12px; color:var(--muted); margin-top:14px;">Send <strong style="color:white;">$125 USD worth of SOL</strong> · Your install link delivered via Telegram instantly</p>
+      </div>
     </div>
   </section>
 
