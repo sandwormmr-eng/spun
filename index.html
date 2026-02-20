@@ -287,7 +287,7 @@
       </a>
       <div class="sol-badge">
         <div class="sol-dot"></div>
-        Accepts SOL only &nbsp;·&nbsp; One-time payment &nbsp;·&nbsp; Instant delivery
+        Accepts SOL only &nbsp;·&nbsp; One-time payment &nbsp;·&nbsp; Manual verification
       </div>
     </div>
   </section>
@@ -321,7 +321,7 @@
         <div class="step-num">1</div>
         <div class="step-content">
           <h3>Pay with SOL</h3>
-          <p>One-time payment. No subscription. Your install link is delivered instantly after payment confirms.</p>
+          <p>One-time payment. No subscription. Send payment, then message <strong>@spunsupport_bot</strong> on Telegram with your wallet address and TX hash. We verify and deliver your install command within a few hours.</p>
         </div>
       </div>
       <div class="step">
@@ -398,14 +398,18 @@
         <li><span class="check">✓</span> Support via Telegram</li>
       </ul>
       <div id="pay" style="margin-top:8px; background:var(--bg); border:1px solid var(--accent); border-radius:12px; padding:24px; text-align:center;">
-        <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Scan with any Solana wallet app (Phantom, Backpack, etc.)</p>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Scan with any Solana wallet (Phantom, Backpack, etc.)</p>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=solana%3AFN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt%3Flabel%3DSpun%26message%3DSpun%2520Setup%2520-%2520%24125" alt="Solana Pay QR" style="border-radius:8px; width:180px; height:180px; display:block; margin:0 auto 16px;" />
         <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">— or copy address manually —</p>
-        <div style="display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; margin-bottom:16px;">
           <code id="wallet-addr" style="font-size:11px; background:var(--bg2); padding:8px 12px; border-radius:8px; word-break:break-all; flex:1; min-width:0; text-align:left;">FN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt</code>
           <button onclick="navigator.clipboard.writeText('FN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)})" style="background:var(--accent);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Copy</button>
         </div>
-        <p style="font-size:12px; color:var(--muted); margin-top:14px;">Send <strong style="color:white;">$125 USD worth of SOL</strong> · Your install link delivered via Telegram instantly</p>
+        <div style="background:rgba(153,69,255,0.1); border:1px solid rgba(153,69,255,0.3); border-radius:10px; padding:14px; text-align:left;">
+          <p style="font-size:13px; font-weight:700; color:white; margin-bottom:6px;">After sending:</p>
+          <p style="font-size:13px; color:var(--muted); margin:0;">Open Telegram and message <a href="https://t.me/spunsupport_bot" style="color:#9945ff; font-weight:700;">@spunsupport_bot</a> with your wallet address and transaction hash. We&apos;ll verify and send your install command within a few hours.</p>
+        </div>
+        <p style="font-size:12px; color:var(--muted); margin-top:12px;">Send <strong style="color:white;">$125 USD worth of SOL</strong> · SOL only · one-time payment</p>
       </div>
     </div>
   </section>
