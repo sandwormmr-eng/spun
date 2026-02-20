@@ -108,99 +108,18 @@ read -p "Press ENTER when ready to log in..."
 claude auth login || error "Claude login failed. Please try running 'claude auth login' manually."
 success "Claude authenticated ✓"
 
-# ─── Claude Max API Bridge ────────────────────────────────────────────────────
-header "Step 4/6 — Claude Max Bridge"
-if command -v claude-max-api &>/dev/null; then
-  success "Claude Max bridge already installed"
+# ─── OpenClaw Auth (Claude setup-token) ──────────────────────────────────────
+header "Step 4/6 — Connecting Claude to OpenClaw"
+info "Generating a setup-token from your Claude login..."
+
+SETUP_TOKEN=$(claude setup-token 2>/dev/null || echo "")
+if [[ -z "$SETUP_TOKEN" ]]; then
+  warn "Could not auto-generate setup token. You may need to run 'claude auth login' again."
+  warn "Then re-run this installer."
 else
-  info "Installing Claude Max bridge..."
-  npm install -g claude-max-api-proxy
-  success "Claude Max bridge installed"
-fi
-
-# Start the bridge and set it to auto-start on login
-BRIDGE_PORT=3456
-start_bridge() {
-  if curl -sf "http://localhost:${BRIDGE_PORT}/health" &>/dev/null; then
-    success "Claude Max bridge already running on port $BRIDGE_PORT"
-    return
-  fi
-  info "Starting Claude Max bridge on port $BRIDGE_PORT..."
-  nohup claude-max-api > /tmp/claude-max-api.log 2>&1 &
-  sleep 3
-  if curl -sf "http://localhost:${BRIDGE_PORT}/health" &>/dev/null; then
-    success "Claude Max bridge started"
-  else
-    warn "Bridge may still be starting — continuing anyway"
-  fi
-}
-
-if [[ "$PLATFORM" == "macOS" ]]; then
-  PLIST="$HOME/Library/LaunchAgents/com.claude-max-api.plist"
-  if [[ ! -f "$PLIST" ]]; then
-    info "Configuring bridge to start automatically on login..."
-    NODE_BIN="$(which node)"
-    PROXY_BIN="$(which claude-max-api 2>/dev/null || npm root -g)/claude-max-api-proxy/dist/server/standalone.js"
-    mkdir -p "$HOME/Library/LaunchAgents"
-    cat > "$PLIST" << PLIST_EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key><string>com.claude-max-api</string>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>ProgramArguments</key>
-  <array>
-    <string>${NODE_BIN}</string>
-    <string>${PROXY_BIN}</string>
-  </array>
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>PATH</key>
-    <string>/usr/local/bin:/opt/homebrew/bin:$HOME/.local/bin:/usr/bin:/bin</string>
-  </dict>
-  <key>StandardOutPath</key><string>/tmp/claude-max-api.log</string>
-  <key>StandardErrorPath</key><string>/tmp/claude-max-api.log</string>
-</dict>
-</plist>
-PLIST_EOF
-    launchctl bootstrap gui/$(id -u) "$PLIST" 2>/dev/null || true
-    success "Bridge configured to start on login"
-  fi
-  # Kick it now if not running
-  if ! curl -sf "http://localhost:${BRIDGE_PORT}/health" &>/dev/null; then
-    launchctl kickstart -k gui/$(id -u)/com.claude-max-api 2>/dev/null || true
-    sleep 3
-  fi
-  start_bridge
-else
-  # Linux — use systemd if available, else just start it
-  if command -v systemctl &>/dev/null && [[ -d "$HOME/.config/systemd/user" ]] 2>/dev/null; then
-    UNIT_FILE="$HOME/.config/systemd/user/claude-max-api.service"
-    if [[ ! -f "$UNIT_FILE" ]]; then
-      mkdir -p "$HOME/.config/systemd/user"
-      cat > "$UNIT_FILE" << UNIT_EOF
-[Unit]
-Description=Claude Max API Bridge
-After=network.target
-
-[Service]
-ExecStart=$(which claude-max-api)
-Restart=always
-RestartSec=5
-StandardOutput=append:/tmp/claude-max-api.log
-StandardError=append:/tmp/claude-max-api.log
-
-[Install]
-WantedBy=default.target
-UNIT_EOF
-      systemctl --user enable claude-max-api.service 2>/dev/null || true
-      systemctl --user start claude-max-api.service 2>/dev/null || true
-      success "Bridge configured to start on login (systemd)"
-    fi
-  fi
-  start_bridge
+  info "Configuring OpenClaw to use your Claude subscription..."
+  echo "$SETUP_TOKEN" | openclaw models auth paste-token --provider anthropic 2>/dev/null ||     openclaw onboard --auth-choice setup-token --setup-token "$SETUP_TOKEN" 2>/dev/null ||     warn "Auto-config failed — we'll set up auth in Step 6."
+  success "Claude subscription connected to OpenClaw"
 fi
 
 # ─── Telegram Bot Setup ───────────────────────────────────────────────────────
@@ -262,27 +181,15 @@ bot_token = sys.argv[1]
 workspace = sys.argv[2]
 
 config = {
-  "gateway": {
-    "mode": "local"
-  },
-  "models": {
-    "providers": {
-      "claude-max": {
-        "baseUrl": "http://localhost:3456/v1",
-        "apiKey": "not-needed",
-        "models": [
-          {"id": "claude-sonnet-4"},
-          {"id": "claude-haiku-4"},
-          {"id": "claude-opus-4"}
-        ]
-      }
-    }
-  },
   "agents": {
     "defaults": {
       "model": {
-        "primary": "claude-max/claude-sonnet-4",
-        "fallbacks": ["claude-max/claude-haiku-4"]
+        "primary": "anthropic/claude-sonnet-4-6",
+        "fallbacks": ["anthropic/claude-sonnet-4-5"]
+      },
+      "models": {
+        "anthropic/claude-sonnet-4-6": {},
+        "anthropic/claude-sonnet-4-5": {}
       },
       "workspace": workspace
     }
@@ -291,7 +198,6 @@ config = {
     "telegram": {
       "enabled": True,
       "dmPolicy": "open",
-      "allowFrom": ["*"],
       "accounts": {
         "default": {
           "botToken": bot_token,
