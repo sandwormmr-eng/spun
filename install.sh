@@ -198,11 +198,14 @@ config = {
     "telegram": {
       "enabled": True,
       "dmPolicy": "open",
+      "groupPolicy": "disabled",
+      "allowFrom": ["*"],
       "accounts": {
         "default": {
           "botToken": bot_token,
           "dmPolicy": "open",
-          "allowFrom": ["*"]
+          "allowFrom": ["*"],
+          "groupPolicy": "disabled"
         }
       }
     }
