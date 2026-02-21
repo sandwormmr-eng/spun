@@ -433,7 +433,7 @@
       var ref = params.get("ref");
       if (ref) {
         localStorage.setItem("spun_ref", ref);
-        var TRACKER_URL = 'https://spun-tracker.REPLACE_ME.workers.dev';
+        var TRACKER_URL = 'https://spun-tracker.spunsh.workers.dev';
         if (!TRACKER_URL.includes('REPLACE_ME')) {
           fetch(TRACKER_URL + "/referral/click", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ code: ref }) }).catch(function() {});
         }
