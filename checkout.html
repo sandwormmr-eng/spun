@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NF9GJK3L2R"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NF9GJK3L2R');
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Checkout — Spun</title>
@@ -301,6 +309,14 @@
 
         document.getElementById('wallet-link').href = payUrl;
 
+        // GA4 begin_checkout event
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'begin_checkout', {
+            value: 125, currency: 'USD',
+            items: [{ item_id: 'spun_setup', item_name: 'Spun AI Agent Setup', price: 125, quantity: 1 }]
+          });
+        }
+
         // Poll Solana mainnet RPC directly
         pollTimer = setInterval(function() { checkPaymentOnChain(); }, 4000);
       }
@@ -333,6 +349,16 @@
         document.getElementById('state-payment').classList.add('hidden');
         document.getElementById('state-confirmed').classList.remove('hidden');
         document.getElementById('install-cmd').textContent = INSTALL_CMD;
+
+        // GA4 purchase event
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'purchase', {
+            transaction_id: txHash || referenceKey,
+            value: 125,
+            currency: 'USD',
+            items: [{ item_id: 'spun_setup', item_name: 'Spun AI Agent Setup', price: 125, quantity: 1 }]
+          });
+        }
 
         // Ping tracker if a referral code was present
         if (ref && TRACKER_URL && !TRACKER_URL.includes('REPLACE_ME')) {
