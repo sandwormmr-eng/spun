@@ -13,8 +13,19 @@ CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
 info()    { echo -e "${CYAN}→${RESET} $*"; }
 success() { echo -e "${GREEN}✓${RESET} $*"; }
 warn()    { echo -e "${YELLOW}⚠${RESET} $*"; }
-error()   { echo -e "${RED}✗${RESET} $*"; exit 1; }
 header()  { echo -e "\n${BOLD}$*${RESET}"; }
+error() {
+  echo ""
+  echo "────────────────────────────────────────────"
+  echo -e "${RED}✗ ERROR:${RESET} $*"
+  echo ""
+  echo -e "  ${YELLOW}Run the recovery script to fix this:${RESET}"
+  echo -e "  ${BOLD}bash <(curl -fsSL https://spun.sh/fix.sh)${RESET}"
+  echo ""
+  echo -e "  Or message us: ${CYAN}https://t.me/spunsupport_bot${RESET}"
+  echo "────────────────────────────────────────────"
+  exit 1
+}
 
 # ─── Banner ───────────────────────────────────────────────────────────────────
 echo ""
@@ -48,6 +59,8 @@ install_node() {
     if ! command -v brew &>/dev/null; then
       info "Installing Homebrew first..."
       /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      # Add Homebrew to PATH for this session
+      eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv 2>/dev/null || true)"
     fi
     info "Installing Node.js via Homebrew..."
     brew install node@22
@@ -227,38 +240,48 @@ openclaw doctor --fix 2>/dev/null || true
 openclaw gateway start 2>/dev/null || true
 sleep 3
 
-# Quick sanity check
-if openclaw gateway status 2>/dev/null | grep -q -i "running"; then
-  GATEWAY_OK=true
-else
-  GATEWAY_OK=false
-fi
+# Verify gateway is actually up
+GATEWAY_OK=false
+for i in 1 2 3 4 5; do
+  if openclaw gateway status 2>/dev/null | grep -q -i "running\|ok\|started\|online"; then
+    GATEWAY_OK=true
+    break
+  fi
+  sleep 2
+done
 
 # ─── Done ─────────────────────────────────────────────────────────────────────
 echo ""
 echo "────────────────────────────────────────────"
 if [[ "$GATEWAY_OK" == "true" ]]; then
-  echo -e "${GREEN}${BOLD}  You're live. 🎉${RESET}"
-else
-  echo -e "${YELLOW}${BOLD}  Almost there — one more step below.${RESET}"
-fi
-echo "────────────────────────────────────────────"
-echo ""
-echo -e "  ${BOLD}To start chatting:${RESET}"
-echo -e "  1. Open Telegram and find ${CYAN}@${BOT_USERNAME}${RESET}"
-echo "  2. Send it any message — your agent will respond"
-echo ""
-
-if [[ "$GATEWAY_OK" != "true" ]]; then
-  echo -e "  ${YELLOW}Gateway didn't start automatically. Run:${RESET}"
-  echo -e "  ${BOLD}openclaw gateway start${RESET}"
+  success "OpenClaw gateway running"
   echo ""
+  echo -e "${GREEN}${BOLD}  You're live. 🎉${RESET}"
+  echo "────────────────────────────────────────────"
+  echo ""
+  echo -e "  ${BOLD}To start chatting:${RESET}"
+  echo -e "  1. Open Telegram and find ${CYAN}@${BOT_USERNAME}${RESET}"
+  echo "  2. Send it any message — your agent will respond"
+  echo ""
+  echo -e "  ${BOLD}Useful commands:${RESET}"
+  echo "  openclaw gateway status   — check if running"
+  echo "  openclaw gateway restart  — restart the gateway"
+  echo "  openclaw status           — full system status"
+  echo ""
+  echo -e "  ${CYAN}Need help? https://t.me/spunsupport_bot${RESET}"
+else
+  ERR_LOG="$HOME/.openclaw/logs/gateway.err.log"
+  echo -e "${YELLOW}${BOLD}  Setup complete — but gateway needs a nudge.${RESET}"
+  echo "────────────────────────────────────────────"
+  echo ""
+  if [[ -f "$ERR_LOG" ]] && [[ -s "$ERR_LOG" ]]; then
+    echo -e "${YELLOW}Gateway error:${RESET}"
+    tail -5 "$ERR_LOG" | sed 's/^/  /'
+    echo ""
+  fi
+  echo -e "  Run the recovery script to fix this:"
+  echo -e "  ${BOLD}bash <(curl -fsSL https://spun.sh/fix.sh)${RESET}"
+  echo ""
+  echo -e "  Or message us: ${CYAN}https://t.me/spunsupport_bot${RESET}"
 fi
-
-echo -e "  ${BOLD}Useful commands:${RESET}"
-echo "  openclaw gateway status   — check if running"
-echo "  openclaw gateway restart  — restart the gateway"
-echo "  openclaw status           — full system status"
-echo ""
-echo -e "  ${CYAN}Need help? spun.sh/support${RESET}"
 echo ""
