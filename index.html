@@ -282,7 +282,7 @@
       One payment. No subscriptions. No tech skills required.
     </p>
     <div class="cta-group" id="get-started">
-      <a href="#pay" class="btn-primary">
+      <a href="checkout.html" class="btn-primary">
         Get Your Agent →
       </a>
       <div class="sol-badge">
@@ -414,10 +414,31 @@
     </div>
   </section>
 
+  <section class="referral-section" style="max-width:480px;margin:0 auto;padding:0 24px 80px;text-align:center;">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 24px;">
+      <div style="font-size:32px;margin-bottom:12px;">&#128184;</div>
+      <h2 style="font-size:22px;font-weight:900;margin-bottom:8px;">Earn $25 per referral</h2>
+      <p style="color:var(--muted);font-size:15px;margin-bottom:20px;">Share your link. Every time someone sets up their agent through you, we send you $25 in SOL.</p>
+      <a href="https://t.me/spunsupport_bot" style="display:inline-block;background:rgba(153,69,255,0.15);border:1px solid var(--accent);color:var(--accent);padding:12px 28px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Get Your Referral Link &rarr;</a>
+      <p style="color:var(--muted);font-size:13px;margin-top:12px;">DM @spunsupport_bot on Telegram to get your link</p>
+    </div>
+  </section>
+
   <footer>
     <p>spun.sh &nbsp;·&nbsp; Built on <a href="https://openclaw.ai">OpenClaw</a> &nbsp;·&nbsp; Requires Claude Max/Pro subscription</p>
     <p style="margin-top:10px;">Questions? <a href="https://t.me/spunsupport_bot" style="color:#9945ff;">@spunsupport_bot</a> on Telegram</p>
   </footer>
 
+  <script>
+    // Referral tracking
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var ref = params.get("ref");
+      if (ref) {
+        localStorage.setItem("spun_ref", ref);
+        fetch("/api/referral/click", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ code: ref }) }).catch(function() {});
+      }
+    })();
+  </script>
 </body>
 </html>
