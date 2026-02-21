@@ -221,37 +221,55 @@
 
   <script>
     (function() {
-      var sessionId = null;
+      var RECIPIENT = 'FN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt';
+      var INSTALL_CMD = 'curl -fsSL https://raw.githubusercontent.com/sandwormmr-eng/spun/main/install.sh | bash';
       var pollTimer = null;
+      var referenceKey = null;
 
       // Read ref from URL or localStorage
       var params = new URLSearchParams(window.location.search);
       var ref = params.get('ref') || localStorage.getItem('spun_ref') || null;
       if (ref) localStorage.setItem('spun_ref', ref);
 
-      // Start checkout
       init();
 
+      // ── Base58 encoder (for Solana reference key) ─────────────────────────
+      function base58Encode(bytes) {
+        var ALPHA = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        var hex = Array.from(bytes).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+        var n = BigInt('0x' + hex);
+        var result = '';
+        while (n > 0n) { result = ALPHA[Number(n % 58n)] + result; n = n / 58n; }
+        for (var i = 0; i < bytes.length && bytes[i] === 0; i++) result = '1' + result;
+        return result;
+      }
+
+      // ── Init: fetch SOL price + build checkout ────────────────────────────
       async function init() {
         try {
-          var res = await fetch('/api/create-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ref: ref })
-          });
-          var data = await res.json();
-          sessionId = data.sessionId;
-          showPayment(data);
+          // Fetch live SOL price
+          var priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+          var priceData = await priceRes.json();
+          var solPrice = priceData.solana.usd;
+          var solAmount = (125 / solPrice).toFixed(4);
+
+          // Generate a random reference key (32 bytes → base58 pubkey)
+          var randomBytes = new Uint8Array(32);
+          crypto.getRandomValues(randomBytes);
+          referenceKey = base58Encode(randomBytes);
+
+          showPayment(solAmount);
         } catch (err) {
           document.getElementById('state-loading').innerHTML =
-            '<p style="color:#ff5f56;">Failed to load checkout. Please refresh.</p>';
+            '<p style="color:#ff5f56;font-size:15px;">Failed to load checkout. Please refresh.</p>' +
+            '<p style="color:var(--muted);font-size:13px;margin-top:8px;">If this keeps happening, message <a href="https://t.me/spunsupport_bot" style="color:var(--green);">@spunsupport_bot</a></p>';
         }
       }
 
-      function showPayment(data) {
+      // ── Show the payment QR ───────────────────────────────────────────────
+      function showPayment(solAmount) {
         document.getElementById('state-loading').classList.add('hidden');
-        var payEl = document.getElementById('state-payment');
-        payEl.classList.remove('hidden');
+        document.getElementById('state-payment').classList.remove('hidden');
 
         // Ref badge
         if (ref) {
@@ -259,17 +277,16 @@
             '<div class="ref-badge">Referred by ' + escapeHtml(ref) + '</div>';
         }
 
-        // SOL amount
-        document.getElementById('sol-amount').textContent = data.solAmount + ' SOL';
+        document.getElementById('sol-amount').textContent = solAmount + ' SOL';
 
-        // Solana Pay URL
-        var payUrl = 'solana:' + data.recipientWallet +
-          '?amount=' + data.solAmount +
-          '&reference=' + data.referenceKey +
+        // Build Solana Pay URL
+        var payUrl = 'solana:' + RECIPIENT +
+          '?amount=' + solAmount +
+          '&reference=' + referenceKey +
           '&label=Spun' +
           '&message=Spun%20Setup%20-%20%24125';
 
-        // QR code
+        // Render QR code
         new QRCode(document.getElementById('qrcode'), {
           text: payUrl,
           width: 200,
@@ -279,53 +296,59 @@
           correctLevel: QRCode.CorrectLevel.M
         });
 
-        // Wallet link
         document.getElementById('wallet-link').href = payUrl;
 
-        // Start polling
-        pollTimer = setInterval(checkPayment, 4000);
+        // Poll Solana mainnet RPC directly
+        pollTimer = setInterval(function() { checkPaymentOnChain(); }, 4000);
       }
 
-      async function checkPayment() {
+      // ── Poll Solana RPC for the reference key ─────────────────────────────
+      async function checkPaymentOnChain() {
         try {
-          var res = await fetch('/api/check-payment?sessionId=' + sessionId);
-          var data = await res.json();
-          if (data.confirmed) {
+          var rpcRes = await fetch('https://api.mainnet-beta.solana.com', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0', id: 1,
+              method: 'getSignaturesForAddress',
+              params: [referenceKey, { limit: 1 }]
+            })
+          });
+          var rpcData = await rpcRes.json();
+          if (rpcData.result && rpcData.result.length > 0) {
             clearInterval(pollTimer);
-            showConfirmed(data.installCmd);
+            showConfirmed();
           }
         } catch (err) {
-          // Silently retry on next interval
+          // silently retry on next tick
         }
       }
 
-      function showConfirmed(installCmd) {
+      // ── Payment confirmed ─────────────────────────────────────────────────
+      function showConfirmed() {
         document.getElementById('state-payment').classList.add('hidden');
-        var confEl = document.getElementById('state-confirmed');
-        confEl.classList.remove('hidden');
+        document.getElementById('state-confirmed').classList.remove('hidden');
+        document.getElementById('install-cmd').textContent = INSTALL_CMD;
 
-        document.getElementById('install-cmd').textContent = installCmd;
-
-        // Share link placeholder
-        var shortId = sessionId ? sessionId.substring(0, 8) : 'xxxxxxxx';
-        var shareUrl = 'https://spun.sh?ref=spun_' + shortId;
+        // Pre-fill referral link if they have a ref code in storage
+        var myRef = localStorage.getItem('spun_ref');
+        var shareUrl = myRef
+          ? 'https://spun.sh?ref=' + encodeURIComponent(myRef)
+          : 'https://spun.sh';
         document.getElementById('share-link').value = shareUrl;
 
-        // X share
-        var tweet = encodeURIComponent('Just set up my AI agent with @spunsh in 15 minutes. One command. No coding.\n\n' + shareUrl);
+        var tweet = encodeURIComponent('Just set up my AI agent with @spunsh in 15 min. One command. No coding required.\n\n' + shareUrl);
         document.getElementById('x-share').href = 'https://x.com/intent/tweet?text=' + tweet;
       }
 
       function escapeHtml(str) {
-        var div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(str));
+        return d.innerHTML;
       }
 
-      // Expose globally for onclick handlers
       window.copyInstall = function() {
-        var cmd = document.getElementById('install-cmd').textContent;
-        navigator.clipboard.writeText(cmd).then(function() {
+        navigator.clipboard.writeText(INSTALL_CMD).then(function() {
           var btn = document.querySelector('.copy-btn');
           btn.textContent = 'Copied!';
           setTimeout(function() { btn.textContent = 'Copy Command'; }, 2000);
@@ -333,8 +356,8 @@
       };
 
       window.copyShareLink = function() {
-        var input = document.getElementById('share-link');
-        navigator.clipboard.writeText(input.value).then(function() {
+        var val = document.getElementById('share-link').value;
+        navigator.clipboard.writeText(val).then(function() {
           var btn = document.querySelector('.share-copy-btn');
           btn.textContent = 'Copied!';
           setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
