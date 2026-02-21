@@ -223,8 +223,10 @@
     (function() {
       var RECIPIENT = 'FN74faeP6NUnUqtFwohKKQzbWLbbWjJf3Dw5LGPe1gDt';
       var INSTALL_CMD = 'curl -fsSL https://raw.githubusercontent.com/sandwormmr-eng/spun/main/install.sh | bash';
+      var TRACKER_URL = 'https://spun-tracker.REPLACE_ME.workers.dev'; // update after CF deploy
       var pollTimer = null;
       var referenceKey = null;
+      var solAmountGlobal = null;
 
       // Read ref from URL or localStorage
       var params = new URLSearchParams(window.location.search);
@@ -252,6 +254,7 @@
           var priceData = await priceRes.json();
           var solPrice = priceData.solana.usd;
           var solAmount = (125 / solPrice).toFixed(4);
+          solAmountGlobal = solAmount;
 
           // Generate a random reference key (32 bytes → base58 pubkey)
           var randomBytes = new Uint8Array(32);
@@ -317,7 +320,8 @@
           var rpcData = await rpcRes.json();
           if (rpcData.result && rpcData.result.length > 0) {
             clearInterval(pollTimer);
-            showConfirmed();
+            var txHash = rpcData.result[0].signature || '';
+            showConfirmed(txHash);
           }
         } catch (err) {
           // silently retry on next tick
@@ -325,10 +329,19 @@
       }
 
       // ── Payment confirmed ─────────────────────────────────────────────────
-      function showConfirmed() {
+      function showConfirmed(txHash) {
         document.getElementById('state-payment').classList.add('hidden');
         document.getElementById('state-confirmed').classList.remove('hidden');
         document.getElementById('install-cmd').textContent = INSTALL_CMD;
+
+        // Ping tracker if a referral code was present
+        if (ref && TRACKER_URL && !TRACKER_URL.includes('REPLACE_ME')) {
+          fetch(TRACKER_URL + '/conversion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ref: ref, txHash: txHash, solAmount: solAmountGlobal })
+          }).catch(function() {}); // fire-and-forget, never block the UX
+        }
 
         // Pre-fill referral link if they have a ref code in storage
         var myRef = localStorage.getItem('spun_ref');
